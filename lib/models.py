@@ -1,6 +1,7 @@
 from sqlalchemy import String, Integer, BigInteger, DECIMAL, create_engine, select, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 from lib.configs import user, password, ipaddress, db_name
+from sqlalchemy.schema import UniqueConstraint
 
 engine = create_engine(f"postgresql://{user}:{password}@{ipaddress}/{db_name}", echo=True)
 
@@ -19,7 +20,8 @@ class Users(Base):
     phone: Mapped[str] = mapped_column(String(30), nullable=True)
 
     def __str__(self):
-        return f"User(user_id={self.user_id!r}, full_name={self.full_name!r}, telegram_id={self.telegram_id!r},phone={self.phone!r})"
+        return f"User(user_id={self.user_id!r}, full_name={self.full_name!r}, " \
+               f"telegram_id={self.telegram_id!r},phone={self.phone!r})"
 
     def __repr__(self):
         return str(self)
@@ -29,10 +31,42 @@ class Carts(Base):
     """Временная корзинка покупателя"""
     __tablename__ = "carts"
     cart_id: Mapped[int] = mapped_column(primary_key=True)
+    finally_id: Mapped[int] = relationship('Finally_carts', back_populates="user_cart")
     user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), unique=True)
     user_cart: Mapped[Users] = relationship('Users', back_populates="carts")
     total_price: Mapped[DECIMAL] = mapped_column(DECIMAL(12, 2), default=0)
     total_products: Mapped[int] = mapped_column(Integer, default=0)
+
+    def __str__(self):
+        return f"Cart(cart_id={self.cart_id!r}, " \
+               f"user_id={self.user_id!r}, " \
+               f"total_price={self.total_price!r}," \
+               f"total_products={self.total_products!r})"
+
+    def __repr__(self):
+        return str(self)
+
+
+class Finally_carts(Base):
+    """Окончательная корзинка пользователя"""
+    __tablename__ = "finally_carts"
+    finally_id: Mapped[int] = mapped_column(primary_key=True)
+    cart_id: Mapped[int] = mapped_column(ForeignKey('carts.cart_id'))
+    user_cart: Mapped[Carts] = relationship('Carts', back_populates="finally_id")
+    product_name: Mapped[str] = mapped_column(String(50))
+    quantity: Mapped[int] = mapped_column(Integer)
+    final_price: Mapped[DECIMAL] = mapped_column(DECIMAL(12, 2))
+    __table_args__ = (UniqueConstraint('cart_id', 'product_name'),)
+
+    def __str__(self):
+        return f"Finally_carts(finally_id={self.finally_id!r}, " \
+               f"cart_id={self.cart_id!r}, " \
+               f"product_name={self.product_name!r}, " \
+               f"quantity={self.quantity!r}, " \
+               f"final_price={self.final_price!r})"
+
+    def __repr__(self):
+        return str(self)
 
 
 class Categories(Base):
@@ -43,7 +77,8 @@ class Categories(Base):
     category_name: Mapped[str] = mapped_column(String(20), unique=True)
 
     def __str__(self):
-        return f"Categories(category_id={self.category_id!r}, category_name={self.category_name!r})"
+        return f"Categories(category_id={self.category_id!r}, " \
+               f"category_name={self.category_name!r})"
 
     def __repr__(self):
         return str(self)

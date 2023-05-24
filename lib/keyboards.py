@@ -1,7 +1,7 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, \
     InlineKeyboardButton, InlineKeyboardMarkup
 
-from lib.db_utils import db_get_categories, db_get_products
+from lib.db_utils import db_get_categories, db_get_products, db_get_final_price
 
 
 def share_phone_button() -> ReplyKeyboardMarkup:
@@ -27,12 +27,12 @@ def back_to_main_menu() -> ReplyKeyboardMarkup:
     ], resize_keyboard=True)
 
 
-def generate_category_menu() -> InlineKeyboardMarkup:
-    # TODO Получить общею сумму с корзинки
+def generate_category_menu(chat_id: int) -> InlineKeyboardMarkup:
+    total_price = db_get_final_price(chat_id)
     markup = InlineKeyboardMarkup(row_width=2)
     markup.row(
         InlineKeyboardButton(
-            text=f'Ваша корзинка  (TODO сум)',
+            text=f'Ваша корзинка  ({total_price if total_price else 0} сум)',
             callback_data='Ваша корзинка'
         )
     )
@@ -59,9 +59,25 @@ def show_product_by_category(category_id: int) -> InlineKeyboardMarkup:
         )
         buttons.append(btn)
     markup.add(*buttons)
+    markup.row(
+        InlineKeyboardButton(text="⬅ Назад", callback_data="main_menu")
+    )
     return markup
 
 
+def generate_constructor_button(quantity: int) -> InlineKeyboardMarkup:
+    markup = InlineKeyboardMarkup()
+    buttons = [
+        InlineKeyboardButton(text='➖', callback_data='action -'),
+        InlineKeyboardButton(text=str(quantity), callback_data=str(quantity)),
+        InlineKeyboardButton(text='➕', callback_data='action +'),
+        InlineKeyboardButton(text='Положить в корзину 😋', callback_data='put into cart')
+    ]
+    markup.add(*buttons)
+    return markup
 
 
-
+def back_to_menu() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup([
+        [KeyboardButton(text='⬅ Назад')]
+    ], resize_keyboard=True)
