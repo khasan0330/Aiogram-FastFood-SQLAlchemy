@@ -3,6 +3,7 @@ from typing import Iterable
 from sqlalchemy.orm import Session
 from sqlalchemy import update
 from sqlalchemy.sql.functions import sum
+from sqlalchemy.exc import IntegrityError
 
 with Session(engine) as session:
     db_session = session
@@ -78,14 +79,60 @@ def db_get_final_price(chat_id: int) -> DECIMAL:
     return db_session.scalar(query)
 
 
-def db_ins_or_upd_finally_cart(cart_id, product_name, total_products, total_price):
+def db_ins_or_upd_finally_cart(
+        cart_id: int, product_name: str, total_products: int, total_price: DECIMAL
+) -> bool:
     try:
-        query = Finally_carts(cart_id=cart_id, product_name=product_name, quantity=total_products, final_price=total_price)
+        query = Finally_carts(
+            cart_id=cart_id,
+            product_name=product_name,
+            quantity=total_products,
+            final_price=total_price
+        )
         db_session.add(query)
         db_session.commit()
         return True
-    except:
-        query = update(Finally_carts).where(Finally_carts.product_name == product_name and Finally_carts.cart_id == cart_id).values(quantity=total_products, final_price=total_price)
+    except IntegrityError:
+        db_session.rollback()
+        query = update(
+            Finally_carts
+        ).where(
+            Finally_carts.product_name == product_name
+        ).where(
+            Finally_carts.cart_id == cart_id
+        ).values(
+            quantity=total_products,
+            final_price=total_price
+        )
         db_session.execute(query)
         db_session.commit()
         return False
+
+
+def db_get_cart_products(chat_id: int) -> Iterable:
+    query = select(
+        Finally_carts.product_name,
+        Finally_carts.quantity,
+        Finally_carts.final_price
+    ).join(
+        Carts
+    ).join(
+        Users
+    ).where(
+        Users.telegram_id == chat_id
+    )
+    return db_session.execute(query).fetchall()
+
+
+def db_product_for_delete(chat_id: int) -> Iterable:
+    query = select(
+        Finally_carts.product_name,
+    ).join(
+        Carts
+    ).join(
+        Users
+    ).where(
+        Users.telegram_id == chat_id
+    )
+
+    return db_session.execute(query).fetchall()

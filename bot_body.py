@@ -125,6 +125,7 @@ async def show_choose_product(call: CallbackQuery):
         message_id=message_id
     )
     product_id = int(call.data.split('_')[-1])
+    print(product_id, '------**--*-*-*-*-**')
     product = db_get_product(product_id)
 
     user_cart = db_get_user_cart(chat_id)
@@ -225,6 +226,38 @@ async def put_into_cart(call: CallbackQuery):
         await bot.answer_callback_query(call.id, "Продукт успешно добавлен")
     else:
         await bot.answer_callback_query(call.id, "Количество успешно изменено")
+
+
+@dp.callback_query_handler(regexp=r"Ваша корзинка")
+async def show_finally_cart(call: CallbackQuery):
+    message_id = call.message.message_id
+    chat_id = call.from_user.id
+    await bot.delete_message(
+        chat_id=chat_id,
+        message_id=message_id
+    )
+
+    cart_products = db_get_cart_products(chat_id)
+    text = 'Ваша корзина: \n\n'
+    total_products = total_price = count = 0
+    for name, quantity, price in cart_products:
+        count += 1
+        total_products += quantity
+        total_price += price
+        text += f'{count}. {name}\nКоличество: {quantity}\nОбщая стоимость: {price}\n\n'
+
+    if count:
+        text += f'Общее количество продуктов: {total_products}\nОбщая стоимость корзины: {total_price}'
+        await bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=generate_cart_button(chat_id)
+        )
+    else:
+        await bot.send_message(
+            chat_id=chat_id,
+            text="Ваша корзинка пуста 🥴"
+        )
 
 
 
