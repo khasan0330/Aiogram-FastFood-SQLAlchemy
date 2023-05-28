@@ -89,10 +89,14 @@ def generate_cart_button(chat_id: int) -> InlineKeyboardMarkup:
     markup.row(
         InlineKeyboardButton(
             text="🚀 Оформить заказ",
-            callback_data=f"order_{chat_id}"
+            callback_data=f"order_🤑"
         )
     )
     cart_products = db_product_for_delete(chat_id)
+    for finally_id, product_name in cart_products:
+        markup.row(
+            InlineKeyboardButton(text=f"❌ {product_name}", callback_data=f"delete_{finally_id}")
+        )
 
     return markup
 

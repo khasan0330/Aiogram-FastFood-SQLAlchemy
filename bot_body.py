@@ -67,6 +67,7 @@ async def show_main_menu(message: Message):
 
 @dp.message_handler(lambda message: '✔ Сделать заказ' in message.text)
 async def make_order(message: Message):
+    """Реакция на кнопку сделать заказ"""
     chat_id = message.chat.id
     await bot.send_message(
         chat_id=chat_id,
@@ -81,6 +82,7 @@ async def make_order(message: Message):
 
 @dp.callback_query_handler(lambda call: 'category_' in call.data)
 async def show_product_button(call: CallbackQuery):
+    """Показ всех продуктов выбранной категории"""
     chat_id = call.message.chat.id
     message_id = call.message.message_id
     category_id = int(call.data.split('_')[-1])
@@ -94,6 +96,7 @@ async def show_product_button(call: CallbackQuery):
 
 @dp.callback_query_handler(lambda call: 'main_menu' in call.data)
 async def return_to_category(call: CallbackQuery):
+    """Возврат к выбору категории продукта"""
     chat_id = call.message.chat.id
     message_id = call.message.message_id
     await bot.edit_message_text(
@@ -106,6 +109,7 @@ async def return_to_category(call: CallbackQuery):
 
 @dp.message_handler(regexp=r'Главное меню')
 async def return_to_main_menu(message: Message):
+    """Возврат в главное меню"""
     message_id = message.message_id - 1
     await bot.delete_message(
         chat_id=message.chat.id,
@@ -116,6 +120,7 @@ async def return_to_main_menu(message: Message):
 
 @dp.callback_query_handler(lambda call: 'product_' in call.data)
 async def show_choose_product(call: CallbackQuery):
+    """Показ продукта с его информацией"""
     chat_id = call.message.chat.id
     message_id = call.message.message_id
     await bot.delete_message(
@@ -125,47 +130,44 @@ async def show_choose_product(call: CallbackQuery):
     product_id = int(call.data.split('_')[-1])
     product = db_get_product(product_id)
 
-    user_cart = db_get_user_cart(chat_id)
-    db_update_to_cart(price=product.price, quantity=1, cart_id=user_cart.cart_id)
-    await bot.send_message(
-        chat_id=chat_id,
-        text='Выберите модификатор',
-        reply_markup=back_to_menu()
-    )
-
-    text = f"{product.product_name}\n"
-    text += f"Ингредиенты: {product.description}\n"
-    text += f"Цена: {product.price} сум"
-
-    with open(product.image, mode='rb') as img:
-        await bot.send_photo(
-            chat_id=chat_id,
-            photo=img,
-            caption=text,
-            reply_markup=generate_constructor_button(1)
-        )
-
-
-@dp.callback_query_handler(lambda call: 'action' in call.data)
-async def constructor_changes(call: CallbackQuery):
-    chat_id = call.from_user.id
-    message_id = call.message.message_id
-    action = call.data.split()[-1]
     try:
         user_cart = db_get_user_cart(chat_id)
-        cart_id = user_cart.cart_id
-        total_products = user_cart.total_products
-    except Exception as e:
-        print(e, '===================ERROR==========')
-        await bot.delete_message(
+        db_update_to_cart(price=product.price, quantity=1, cart_id=user_cart.cart_id)
+        await bot.send_message(
             chat_id=chat_id,
-            message_id=message_id
+            text='Выберите модификатор',
+            reply_markup=back_to_menu()
         )
+
+        text = f"{product.product_name}\n"
+        text += f"Ингредиенты: {product.description}\n"
+        text += f"Цена: {product.price} сум"
+
+        with open(product.image, mode='rb') as img:
+            await bot.send_photo(
+                chat_id=chat_id,
+                photo=img,
+                caption=text,
+                reply_markup=generate_constructor_button(1)
+            )
+    except AttributeError:
         await bot.send_message(
             chat_id=chat_id,
             text="К сожалению вы еще не отправили нам контакт",
             reply_markup=share_phone_button()
         )
+
+
+@dp.callback_query_handler(lambda call: 'action' in call.data)
+async def constructor_changes(call: CallbackQuery):
+    """Нажатие на + и - в конструкторе"""
+    chat_id = call.from_user.id
+    message_id = call.message.message_id
+    action = call.data.split()[-1]
+
+    user_cart = db_get_user_cart(chat_id)
+    cart_id = user_cart.cart_id
+    total_products = user_cart.total_products
 
     product_name = call.message['caption'].split('\n')[0]
     product = db_get_product_by_name(product_name)
@@ -188,20 +190,18 @@ async def constructor_changes(call: CallbackQuery):
     text += f"Ингредиенты: {product.description}\n"
     text += f"Цена: {user_cart.total_price} сум"
 
-    try:
-        with open(product.image, mode='rb') as img:
-            await bot.edit_message_media(
-                chat_id=chat_id,
-                message_id=message_id,
-                media=InputMedia(media=img, caption=text),
-                reply_markup=generate_constructor_button(user_cart.total_products)
-            )
-    except:
-        pass
+    with open(product.image, mode='rb') as img:
+        await bot.edit_message_media(
+            chat_id=chat_id,
+            message_id=message_id,
+            media=InputMedia(media=img, caption=text),
+            reply_markup=generate_constructor_button(user_cart.total_products)
+        )
 
 
 @dp.message_handler(regexp=r'⬅ Назад')
 async def return_menu(message: Message):
+    """Возврат к выбору категории продукта"""
     message_id = message.message_id - 1
     await bot.delete_message(
         chat_id=message.chat.id,
@@ -212,6 +212,7 @@ async def return_menu(message: Message):
 
 @dp.callback_query_handler(lambda call: 'put into cart' in call.data)
 async def put_into_cart(call: CallbackQuery):
+    """Добавление продукта в финальную корзину"""
     chat_id = call.from_user.id
     user_cart = db_get_user_cart(chat_id)
     cart_id = user_cart.cart_id
@@ -220,13 +221,36 @@ async def put_into_cart(call: CallbackQuery):
     product_name = call.message['caption'].split('\n')[0]
 
     if db_ins_or_upd_finally_cart(cart_id, product_name, total_products, total_price):
-        await bot.answer_callback_query(call.id, "Продукт успешно добавлен")
+        await bot.answer_callback_query(
+            callback_query_id=call.id,
+            text="Продукт успешно добавлен"
+        )
     else:
-        await bot.answer_callback_query(call.id, "Количество успешно изменено")
+        await bot.answer_callback_query(
+            callback_query_id=call.id,
+            text="Количество успешно изменено"
+        )
+
+
+def do_not_repeat_yourself(chat_id, text):
+    """Подсчет товаров в корзине"""
+    cart_products = db_get_cart_products(chat_id)
+    text = f'{text}: \n\n'
+    total_products = total_price = count = 0
+    for name, quantity, price, cart_id in cart_products:
+        count += 1
+        total_products += quantity
+        total_price += price
+        text += f'{count}. {name}\nКоличество: {quantity}\nСтоимость: {price}\n\n'
+
+    text += f'Общее количество продуктов: {total_products}\nОбщая стоимость корзины: {total_price}'
+    context = (count, text, total_price, cart_id)
+    return context
 
 
 @dp.callback_query_handler(regexp=r"Ваша корзинка")
 async def show_finally_cart(call: CallbackQuery):
+    """Показ корзины пользователя"""
     message_id = call.message.message_id
     chat_id = call.from_user.id
     await bot.delete_message(
@@ -234,17 +258,8 @@ async def show_finally_cart(call: CallbackQuery):
         message_id=message_id
     )
 
-    cart_products = db_get_cart_products(chat_id)
-    text = 'Ваша корзина: \n\n'
-    total_products = total_price = count = 0
-    for name, quantity, price in cart_products:
-        count += 1
-        total_products += quantity
-        total_price += price
-        text += f'{count}. {name}\nКоличество: {quantity}\nОбщая стоимость: {price}\n\n'
-
+    count, text, *_ = do_not_repeat_yourself(chat_id, 'Ваша корзина')
     if count:
-        text += f'Общее количество продуктов: {total_products}\nОбщая стоимость корзины: {total_price}'
         await bot.send_message(
             chat_id=chat_id,
             text=text,
@@ -255,9 +270,50 @@ async def show_finally_cart(call: CallbackQuery):
             chat_id=chat_id,
             text="Ваша корзинка пуста 🥴"
         )
+        await make_order(call.message)
 
 
+@dp.callback_query_handler(lambda call: 'delete' in call.data)
+async def delete_cart_product(call: CallbackQuery):
+    """Удаление продукта с финальной корзины"""
+    finally_id = int(call.data.split('_')[-1])
+    db_delete_product(finally_id)
+    await bot.answer_callback_query(
+        callback_query_id=call.id,
+        text="Продукт успешно удален!"
+    )
+    await show_finally_cart(call)
 
+
+@dp.callback_query_handler(lambda call: 'order_🤑' in call.data)
+async def create_order(call: CallbackQuery):
+    """Оплата продуктов с корзины"""
+    chat_id = call.message.chat.id
+    message_id = call.message.message_id
+    await bot.delete_message(
+        chat_id=chat_id,
+        message_id=message_id
+    )
+
+    count, text, price, cart_id = do_not_repeat_yourself(chat_id, 'Итоговый список для оплаты')
+    text += "\nДоставка по городу: 10000"
+    await bot.send_invoice(
+        chat_id=chat_id,
+        title=f"Ваш заказ",
+        description=text,
+        payload="bot-defined invoice payload",
+        provider_token=PAYME,
+        currency='UZS',
+        prices=[
+            LabeledPrice(label="Общая стоимость", amount=int(price * 100)),
+            LabeledPrice(label="Доставка", amount=1000000)
+        ]
+    )
+    # TODO Отчет манагерам
+    clear_finally_cart(cart_id)
+
+
+# TODO админка
 
 
 executor.start_polling(dp)

@@ -1,7 +1,7 @@
 from lib.models import *
 from typing import Iterable
 from sqlalchemy.orm import Session
-from sqlalchemy import update
+from sqlalchemy import update, delete
 from sqlalchemy.sql.functions import sum
 from sqlalchemy.exc import IntegrityError
 
@@ -113,7 +113,8 @@ def db_get_cart_products(chat_id: int) -> Iterable:
     query = select(
         Finally_carts.product_name,
         Finally_carts.quantity,
-        Finally_carts.final_price
+        Finally_carts.final_price,
+        Finally_carts.cart_id
     ).join(
         Carts
     ).join(
@@ -126,6 +127,7 @@ def db_get_cart_products(chat_id: int) -> Iterable:
 
 def db_product_for_delete(chat_id: int) -> Iterable:
     query = select(
+        Finally_carts.finally_id,
         Finally_carts.product_name,
     ).join(
         Carts
@@ -136,3 +138,29 @@ def db_product_for_delete(chat_id: int) -> Iterable:
     )
 
     return db_session.execute(query).fetchall()
+
+
+def db_delete_product(finally_id: int) -> None:
+    query = delete(Finally_carts).where(Finally_carts.finally_id == finally_id)
+    db_session.execute(query)
+    db_session.commit()
+
+
+def db_get_total_product_price(chat_id: int) -> Iterable:
+    query = select(
+        sum(Finally_carts.quantity),
+        sum(Finally_carts.final_price)
+    ).join(
+        Carts
+    ).join(
+        Users
+    ).where(
+        Users.telegram_id == chat_id
+    )
+    return db_session.execute(query).fetchone()
+
+
+def clear_finally_cart(cart_id: int) -> None:
+    query = delete(Finally_carts).where(Finally_carts.cart_id == cart_id)
+    db_session.execute(query)
+    db_session.commit()
