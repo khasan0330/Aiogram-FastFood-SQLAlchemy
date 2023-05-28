@@ -68,7 +68,6 @@ async def show_main_menu(message: Message):
 @dp.message_handler(lambda message: '✔ Сделать заказ' in message.text)
 async def make_order(message: Message):
     chat_id = message.chat.id
-    # TODO Получить id корзинки
     await bot.send_message(
         chat_id=chat_id,
         text="Погнали",
@@ -97,7 +96,6 @@ async def show_product_button(call: CallbackQuery):
 async def return_to_category(call: CallbackQuery):
     chat_id = call.message.chat.id
     message_id = call.message.message_id
-    # TODO Получить id корзинки
     await bot.edit_message_text(
         chat_id=chat_id,
         message_id=message_id,
@@ -125,7 +123,6 @@ async def show_choose_product(call: CallbackQuery):
         message_id=message_id
     )
     product_id = int(call.data.split('_')[-1])
-    print(product_id, '------**--*-*-*-*-**')
     product = db_get_product(product_id)
 
     user_cart = db_get_user_cart(chat_id)
