@@ -3,7 +3,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship,
 from lib.configs import user, password, ipaddress, db_name
 from sqlalchemy.schema import UniqueConstraint
 
-engine = create_engine(f"postgresql://{user}:{password}@{ipaddress}/{db_name}", echo=True)
+engine = create_engine(f"postgresql://{user}:{password}@{ipaddress}/{db_name}", echo=False)
 
 
 class Base(DeclarativeBase):
