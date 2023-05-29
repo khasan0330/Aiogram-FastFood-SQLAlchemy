@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, BigInteger, DECIMAL, create_engine, select, ForeignKey
+from sqlalchemy import String, Integer, BigInteger, DECIMAL, create_engine, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 from lib.configs import user, password, ipaddress, db_name
 from sqlalchemy.schema import UniqueConstraint

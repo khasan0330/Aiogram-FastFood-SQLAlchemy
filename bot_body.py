@@ -5,7 +5,7 @@ from lib.db_utils import *
 from sqlalchemy.exc import IntegrityError
 
 from aiogram import Dispatcher, executor, Bot
-from aiogram.types import Message, CallbackQuery, InputMedia, ReplyKeyboardRemove, LabeledPrice
+from aiogram.types import Message, CallbackQuery, InputMedia,  LabeledPrice
 
 bot = Bot(TOKEN, parse_mode='HTML')
 dp = Dispatcher(bot)
