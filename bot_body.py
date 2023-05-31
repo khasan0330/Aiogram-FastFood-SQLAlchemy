@@ -235,17 +235,18 @@ async def put_into_cart(call: CallbackQuery):
 def do_not_repeat_yourself(chat_id, text):
     """Подсчет товаров в корзине"""
     cart_products = db_get_cart_products(chat_id)
-    text = f'{text}: \n\n'
-    total_products = total_price = count = 0
-    for name, quantity, price, cart_id in cart_products:
-        count += 1
-        total_products += quantity
-        total_price += price
-        text += f'{count}. {name}\nКоличество: {quantity}\nСтоимость: {price}\n\n'
+    if cart_products:
+        text = f'{text}: \n\n'
+        total_products = total_price = count = 0
+        for name, quantity, price, cart_id in cart_products:
+            count += 1
+            total_products += quantity
+            total_price += price
+            text += f'{count}. {name}\nКоличество: {quantity}\nСтоимость: {price}\n\n'
 
-    text += f'Общее количество продуктов: {total_products}\nОбщая стоимость корзины: {total_price}'
-    context = (count, text, total_price, cart_id)
-    return context
+        text += f'Общее количество продуктов: {total_products}\nОбщая стоимость корзины: {total_price}'
+        context = (count, text, total_price, cart_id)
+        return context
 
 
 @dp.callback_query_handler(regexp=r"Ваша корзинка")
@@ -257,9 +258,9 @@ async def show_finally_cart(call: CallbackQuery):
         chat_id=chat_id,
         message_id=message_id
     )
-
-    count, text, *_ = do_not_repeat_yourself(chat_id, 'Ваша корзина')
-    if count:
+    products = do_not_repeat_yourself(chat_id, 'Ваша корзина')
+    if products:
+        count, text, *_ = do_not_repeat_yourself(chat_id, 'Ваша корзина')
         await bot.send_message(
             chat_id=chat_id,
             text=text,
